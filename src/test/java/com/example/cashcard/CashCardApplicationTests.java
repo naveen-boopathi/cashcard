@@ -45,7 +45,7 @@ class CashCardApplicationTests {
 	@Test
 	@DirtiesContext
 	void shouldCreateANewCashCard() {
-		CashCard newCashCard = new CashCard(null, 250.00, "vrish");
+		CashCard newCashCard = new CashCard(null, 250.00, null);
 		ResponseEntity<Void> createResponse = restTemplate.withBasicAuth("vrish", "test123").postForEntity("/cashcards", newCashCard, Void.class);
 		assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
@@ -115,6 +115,12 @@ class CashCardApplicationTests {
 	void shouldRejectUsersWhoAreNotCardOwners() {
 		ResponseEntity<String> response = restTemplate.withBasicAuth("raju", "dummy123").getForEntity("/cashcards/99", String.class);
 		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+	}
+
+	@Test
+	void shouldNotAllowAccessToCashCardsTheyDoNotOwn() {
+		ResponseEntity<String> response = restTemplate.withBasicAuth("vrish", "test123").getForEntity("/cashcards/102", String.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
 
 	@Test
