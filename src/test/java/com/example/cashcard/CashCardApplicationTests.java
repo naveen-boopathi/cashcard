@@ -150,7 +150,34 @@ class CashCardApplicationTests {
 	}
 
 	@Test
-	void contextLoads() {
+	@DirtiesContext
+	void shouldDeleteAnExistingCashCard() {
+		ResponseEntity<Void> response = restTemplate.withBasicAuth("vrish", "test123").exchange("/cashcards/99", HttpMethod.DELETE, null, Void.class);
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+
+		ResponseEntity<String> getResponse = restTemplate.withBasicAuth("vrish", "test123").getForEntity("/cashcards/99", String.class);
+		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
+	void shouldNotDeleteACashCardThatDoesNotExist() {
+		ResponseEntity<Void> deleteResponse = restTemplate.withBasicAuth("vrish", "test123").exchange("/cashcards/9999", HttpMethod.DELETE, null, Void.class);
+		assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+	}
+
+	@Test
+	@DirtiesContext
+	void shouldNotAllowDeletionOfCashCardsTheyDoNotOwn() {
+		CashCard newCashCard = new CashCard(null, 102.00, null);
+		ResponseEntity<Void> createResponse = restTemplate.withBasicAuth("kini", "test456").postForEntity("/cashcards", newCashCard, Void.class);
+		assertThat(createResponse.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+		URI locationOfNewCashCard = createResponse.getHeaders().getLocation();
+		ResponseEntity<Void> deleteResponse = restTemplate.withBasicAuth("vrish", "test123").exchange(locationOfNewCashCard, HttpMethod.DELETE, null, Void.class);
+		assertThat(deleteResponse.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+
+		ResponseEntity<String> getResponse = restTemplate.withBasicAuth("kini", "test456").getForEntity(locationOfNewCashCard, String.class);
+		assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
 	}
 
 }
